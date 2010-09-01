@@ -72,11 +72,15 @@ function Get-GitStatus($gitDir = (Get-GitDirectory)) {
         $filesDeleted = @()
         $filesUnmerged = @()
 
-        $status = git status --short --branch 2>$null
+		$symbolicref = git symbolic-ref HEAD
+		if($symbolicref -ne $NULL) {
+			$branch += $symbolicref.substring($symbolicref.LastIndexOf("/") +1)
+		}
+        $status = git status --short 2>$null
         $status | where { $_ } | foreach {
             switch -regex ($_) {
                 '^## (?<branch>\S+)(?:\.\.\.(?<upstream>\S+) \[(?:ahead (?<ahead>\d+))?(?:, )?(?:behind (?<behind>\d+))?\])?$' {
-                    $branch = $matches['branch']
+                    #$branch = $matches['branch']
                     $upstream = $matches['upstream']
                     $aheadBy = [int]$matches['ahead']
                     $behindBy = [int]$matches['behind']
