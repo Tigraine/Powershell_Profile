@@ -1,36 +1,42 @@
-$Global:CurrentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
-$UserType = "User"
-$CurrentUser.Groups | foreach { 
-    if ($_.value -eq "S-1-5-32-544") {
-        $UserType = "Admin" } 
-    }
+Push-Location (Split-Path -Path $MyInvocation.MyCommand.Definition -Parent)
 
+# Load posh-git module from current directory
+Import-Module .\posh-git
+
+# If module is installed in a default location ($env:PSModulePath),
+# use this instead (see about_Modules for more information):
+# Import-Module posh-git
+
+
+# Set up a simple prompt, adding the git prompt parts inside git repos
 function prompt {
-     # Fun stuff if using the standard PowerShell prompt; not useful for Console2.
-     # This, and the variables above, could be commented out.
-     if($UserType -eq "Admin") {
-       $host.UI.RawUI.WindowTitle = "" + $(get-location) + " : Admin"
-       $host.UI.RawUI.ForegroundColor = "white"
-      }
-     else {
-       $host.ui.rawui.WindowTitle = $(get-location)
-     }
-
-    Write-Host("")
-    $status_string = ""
-    $symbolicref = git symbolic-ref HEAD
-    if($symbolicref -ne $NULL) {
-        $status_string += "GIT [" + $symbolicref.substring($symbolicref.LastIndexOf("/") +1) + "] "
-    }
-    else {
-        $status_string = "PS "
+    Write-Host($pwd) -nonewline
+        
+    # Git Prompt
+    if($Global:GitPromptSettings.EnablePromptStatus) {
+        $Global:GitStatus = Get-GitStatus
+        Write-GitStatus $GitStatus
     }
 
-    if ($status_string.StartsWith("GIT")) {
-        Write-Host ($status_string + $(get-location) + ">") -nonewline -foregroundcolor yellow
+    return "> "
+}
+
+if(-not (Test-Path Function:\DefaultTabExpansion)) {
+    Rename-Item Function:\TabExpansion DefaultTabExpansion
+}
+
+# Set up tab expansion and include git expansion
+function TabExpansion($line, $lastWord) {
+    $lastBlock = [regex]::Split($line, '[|;]')[-1]
+    
+    switch -regex ($lastBlock) {
+        # Execute git tab completion for all git-related commands
+        'git (.*)' { GitTabExpansion $lastBlock }
+        # Fall back on existing tab expansion
+        default { DefaultTabExpansion $line $lastWord }
     }
-    else {
-        Write-Host ($status_string + $(get-location) + ">") -nonewline -foregroundcolor green
-    }
-    return " "
- }
+}
+
+Enable-GitColors
+
+Pop-Location
