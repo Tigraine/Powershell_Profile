@@ -1,0 +1,7 @@
+h1. My Powershell Profile
+
+This is a repository to help me keep my Powershell Profile in sync across my machines. 
+I use Powershell primarily for running Git commands so most of the profile only contains Posh-Git
+(http://github.com/dahlbyk/posh-git)
+
+If you like it and find something cool worth adding please send me a pull request!
