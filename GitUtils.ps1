@@ -58,9 +58,11 @@ function Get-GitBranch($gitDir = $(Get-GitDirectory)) {
 }
 
 function Get-GitStatus($gitDir = (Get-GitDirectory)) {
-    if ($gitDir)
+    $settings = $Global:GitPromptSettings
+    $enabled = (-not $settings) -or $settings.EnablePromptStatus
+    if ($enabled -and $gitDir)
     {
-        $branch = ''
+        $branch = Get-GitBranch $gitDir
         $aheadBy = 0
         $behindBy = 0
         $indexAdded = @()
@@ -72,11 +74,15 @@ function Get-GitStatus($gitDir = (Get-GitDirectory)) {
         $filesDeleted = @()
         $filesUnmerged = @()
 
-        $status = git status --short --branch 2>$null
+        if($settings.EnableFileStatus) {
+            $status = git status --short --branch 2>$null
+        } else {
+            $status = @()
+        }
+
         $status | where { $_ } | foreach {
             switch -regex ($_) {
                 '^## (?<branch>\S+)(?:\.\.\.(?<upstream>\S+) \[(?:ahead (?<ahead>\d+))?(?:, )?(?:behind (?<behind>\d+))?\])?$' {
-                    $branch = $matches['branch']
                     $upstream = $matches['upstream']
                     $aheadBy = [int]$matches['ahead']
                     $behindBy = [int]$matches['behind']
@@ -115,7 +121,7 @@ function Get-GitStatus($gitDir = (Get-GitDirectory)) {
             Add-Member -PassThru NoteProperty Deleted  $filesDeleted |
             Add-Member -PassThru NoteProperty Unmerged $filesUnmerged
 
-        $status = New-Object PSObject -Property @{
+        $result = New-Object PSObject -Property @{
             GitDir          = $gitDir
             Branch          = $branch
             AheadBy         = $aheadBy
@@ -126,7 +132,7 @@ function Get-GitStatus($gitDir = (Get-GitDirectory)) {
             HasUntracked    = [bool]$filesAdded
         }
 
-        return $status
+        return $result
     }
 }
 

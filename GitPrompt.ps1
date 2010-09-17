@@ -37,12 +37,12 @@ $global:GitPromptSettings = New-Object PSObject -Property @{
     AutoRefreshIndex          = $true
 
     EnablePromptStatus        = $true
+    EnableFileStatus          = $true
 }
 
 function Write-GitStatus($status) {
-    if ($status) {
-        $s = $global:GitPromptSettings
-        
+    $s = $global:GitPromptSettings
+    if ($status -and $s) {
         $currentBranch = $status.Branch
         
         Write-Host $s.BeforeText -NoNewline -BackgroundColor $s.BeforeBackgroundColor -ForegroundColor $s.BeforeForegroundColor
@@ -54,7 +54,7 @@ function Write-GitStatus($status) {
             Write-Host $currentBranch -NoNewline -BackgroundColor $s.Branch2BackgroundColor -ForegroundColor $s.Branch2ForegroundColor
         }
         
-        if($status.HasIndex) {
+        if($s.EnableFileStatus -and $status.HasIndex) {
             write-host $s.BeforeIndexText -NoNewLine -BackgroundColor $s.BeforeIndexBackgroundColor -ForegroundColor $s.BeforeIndexForegroundColor
             
             if($s.ShowStatusWhenZero -or $status.Index.Added) {
@@ -76,7 +76,7 @@ function Write-GitStatus($status) {
             }
         }
         
-        if($status.HasWorking) {
+        if($s.EnableFileStatus -and $status.HasWorking) {
             if($s.ShowStatusWhenZero -or $status.Working.Added) {
               Write-Host " +$($status.Working.Added.Count)" -NoNewline -BackgroundColor $s.WorkingBackgroundColor -ForegroundColor $s.WorkingForegroundColor
             }
